@@ -20,33 +20,36 @@ register = template.Library()
 
 @cache_result()
 @register.simple_tag
-def avatar_url(user, size=settings.AVATAR_DEFAULT_SIZE):
+def avatar_url(user, width=settings.AVATAR_DEFAULT_SIZE, height=False):
+    if height == False: height = width
     for provider_path in settings.AVATAR_PROVIDERS:
         provider = import_string(provider_path)
-        avatar_url = provider.get_avatar_url(user, size)
+        avatar_url = provider.get_avatar_url(user, width, height)
         if avatar_url:
             return avatar_url
 
 
 @cache_result()
 @register.simple_tag
-def avatar(user, size=settings.AVATAR_DEFAULT_SIZE, **kwargs):
+def avatar(user, width=settings.AVATAR_DEFAULT_SIZE, height=False, **kwargs):
+    if height == False: height = width
     if not isinstance(user, get_user_model()):
         try:
             user = get_user(user)
             alt = six.text_type(user)
-            url = avatar_url(user, size)
+            url = avatar_url(user, width, height)
         except get_user_model().DoesNotExist:
             url = get_default_avatar_url()
             alt = _("Default Avatar")
     else:
         alt = six.text_type(user)
-        url = avatar_url(user, size)
+        url = avatar_url(user, width, height)
     context = {
         'user': user,
         'url': url,
         'alt': alt,
-        'size': size,
+        'width': width,
+        'height': height,
         'kwargs': kwargs,
     }
     return render_to_string('avatar/avatar_tag.html', context)
@@ -61,7 +64,7 @@ def has_avatar(user):
 
 @cache_result()
 @register.simple_tag
-def primary_avatar(user, size=settings.AVATAR_DEFAULT_SIZE):
+def primary_avatar(user, width=settings.AVATAR_DEFAULT_SIZE, height=False):
     """
     This tag tries to get the default avatar for a user without doing any db
     requests. It achieve this by linking to a special view that will do all the
@@ -69,18 +72,19 @@ def primary_avatar(user, size=settings.AVATAR_DEFAULT_SIZE):
     we will avoid many db calls.
     """
     alt = six.text_type(user)
-    url = reverse('avatar_render_primary', kwargs={'user': user, 'size': size})
+    url = reverse('avatar_render_primary', kwargs={'user': user, 'width' : width, 'height' : height})
     return ("""<img src="%s" alt="%s" width="%s" height="%s" />""" %
-            (url, alt, size, size))
+            (url, alt, width, height))
 
 
 @cache_result()
 @register.simple_tag
-def render_avatar(avatar, size=settings.AVATAR_DEFAULT_SIZE):
-    if not avatar.thumbnail_exists(size):
-        avatar.create_thumbnail(size)
+def render_avatar(avatar, width=settings.AVATAR_DEFAULT_SIZE, height=False):
+    if height == False: height = width
+    if not avatar.thumbnail_exists(width,height):
+        avatar.create_thumbnail(width,height)
     return """<img src="%s" alt="%s" width="%s" height="%s" />""" % (
-        avatar.avatar_url(size), six.text_type(avatar), size, size)
+        avatar.avatar_url(width, height), six.text_type(avatar), width, height)
 
 
 @register.tag

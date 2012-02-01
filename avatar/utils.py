@@ -30,13 +30,13 @@ def get_user(username):
     return get_user_model().objects.get_by_natural_key(username)
 
 
-def get_cache_key(user_or_username, size, prefix):
+def get_cache_key(user_or_username, width, height, prefix):
     """
     Returns a cache key consisten of a username and image size.
     """
     if isinstance(user_or_username, get_user_model()):
         user_or_username = get_username(user_or_username)
-    key = six.u('%s_%s_%s') % (prefix, user_or_username, size)
+    key = six.u('%s_%s_%s_%s') % (prefix, user_or_username, width, height)
     return six.u('%s_%s') % (slugify(key)[:100],
                              hashlib.md5(force_bytes(key)).hexdigest())
 
@@ -57,29 +57,29 @@ def cache_result(default_size=settings.AVATAR_DEFAULT_SIZE):
         return decorator
 
     def decorator(func):
-        def cached_func(user, size=None):
+        def cached_func(user, width=None, height=None):
             prefix = func.__name__
             cached_funcs.add(prefix)
-            key = get_cache_key(user, size or default_size, prefix=prefix)
+            key = get_cache_key(user, width or default_size, height or default_size, prefix=prefix)
             result = cache.get(key)
             if result is None:
-                result = func(user, size or default_size)
+                result = func(user, width or default_size, height or default_size)
                 cache_set(key, result)
             return result
         return cached_func
     return decorator
 
 
-def invalidate_cache(user, size=None):
+def invalidate_cache(user, width=None, height=None):
     """
     Function to be called when saving or changing an user's avatars.
     """
     sizes = set(settings.AVATAR_AUTO_GENERATE_SIZES)
-    if size is not None:
-        sizes.add(size)
+    if width is not None:
+        sizes.add(width, height)
     for prefix in cached_funcs:
-        for size in sizes:
-            cache.delete(get_cache_key(user, size, prefix))
+        for width, height in sizes:
+            cache.delete(get_cache_key(user, width, height, prefix))
 
 
 def get_default_avatar_url():
@@ -102,7 +102,8 @@ def get_default_avatar_url():
     return '%s%s' % (base_url, settings.AVATAR_DEFAULT_URL)
 
 
-def get_primary_avatar(user, size=settings.AVATAR_DEFAULT_SIZE):
+def get_primary_avatar(user, width=settings.AVATAR_DEFAULT_SIZE, height=False):
+    if height == False: height = width
     User = get_user_model()
     if not isinstance(user, User):
         try:
@@ -118,6 +119,6 @@ def get_primary_avatar(user, size=settings.AVATAR_DEFAULT_SIZE):
     except IndexError:
         avatar = None
     if avatar:
-        if not avatar.thumbnail_exists(size):
-            avatar.create_thumbnail(size)
+        if not avatar.thumbnail_exists(width, height):
+            avatar.create_thumbnail(width, height)
     return avatar
