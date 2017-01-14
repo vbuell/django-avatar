@@ -34,7 +34,7 @@ class DefaultAvatarProvider(object):
     """
 
     @classmethod
-    def get_avatar_url(self, user, size):
+    def get_avatar_url(self, user, width, height):
         return get_default_avatar_url()
 
 
@@ -44,10 +44,10 @@ class PrimaryAvatarProvider(object):
     """
 
     @classmethod
-    def get_avatar_url(self, user, size):
-        avatar = get_primary_avatar(user, size)
+    def get_avatar_url(self, user, width, height):
+        avatar = get_primary_avatar(user, width, height)
         if avatar:
-            return avatar.avatar_url(size)
+            return avatar.avatar_url(width, height)
 
 
 class GravatarAvatarProvider(object):
@@ -56,8 +56,8 @@ class GravatarAvatarProvider(object):
     """
 
     @classmethod
-    def get_avatar_url(self, user, size):
-        params = {'s': str(size)}
+    def get_avatar_url(self, user, width, height):
+        params = {'s': str(width)}
         if settings.AVATAR_GRAVATAR_DEFAULT:
             params['d'] = settings.AVATAR_GRAVATAR_DEFAULT
         if settings.AVATAR_GRAVATAR_FORCEDEFAULT:
@@ -74,11 +74,11 @@ class FacebookAvatarProvider(object):
     """
 
     @classmethod
-    def get_avatar_url(self, user, size):
+    def get_avatar_url(self, user, width, height):
         fb_id = get_facebook_id(user)
         if fb_id:
             url = 'https://graph.facebook.com/{fb_id}/picture?type=square&width={size}&height={size}'
             return url.format(
                 fb_id=fb_id,
-                size=size
+                size=width
             )

@@ -141,7 +141,7 @@ class Avatar(models.Model):
                 thumb_file = ContentFile(thumb.getvalue())
             else:
                 thumb_file = File(orig)
-            thumb = self.avatar.storage.save(self.avatar_name(size), thumb_file)
+            thumb = self.avatar.storage.save(self.avatar_name(width, height), thumb_file)
         except IOError:
             return  # What should we do here?  Render a "sorry, didn't work" img?
 
@@ -168,14 +168,14 @@ def invalidate_avatar_cache(sender, instance, **kwargs):
 def create_default_thumbnails(sender, instance, created=False, **kwargs):
     invalidate_avatar_cache(sender, instance)
     if created:
-        for (width, height) in settings.AVATAR_AUTO_GENERATE_SIZES:
+        for width, height in settings.AVATAR_AUTO_GENERATE_SIZES:
             instance.create_thumbnail(width, height)
 
 
 def remove_avatar_images(instance=None, **kwargs):
-    for size in settings.AVATAR_AUTO_GENERATE_SIZES:
-        if instance.thumbnail_exists(size):
-            instance.avatar.storage.delete(instance.avatar_name(size))
+    for width, height in settings.AVATAR_AUTO_GENERATE_SIZES:
+        if instance.thumbnail_exists(width, height):
+            instance.avatar.storage.delete(instance.avatar_name(width, height))
     instance.avatar.storage.delete(instance.avatar.name)
 
 

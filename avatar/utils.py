@@ -76,7 +76,7 @@ def invalidate_cache(user, width=None, height=None):
     """
     sizes = set(settings.AVATAR_AUTO_GENERATE_SIZES)
     if width is not None:
-        sizes.add(width, height)
+        sizes.add((width, height))
     for prefix in cached_funcs:
         for width, height in sizes:
             cache.delete(get_cache_key(user, width, height, prefix))
